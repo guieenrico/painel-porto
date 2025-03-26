@@ -1,34 +1,35 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Carregar dados
-df = pd.read_csv("dados.csv")
+# Carregar os dados
+df = pd.read_csv("dados.csv", sep=';')
 
-# Título e Logo
-st.image("logo-clara.png", width=150)
-st.markdown("<h1 style='text-align: center;'>Gestão de Tráfego</h1>", unsafe_allow_html=True)
-st.markdown("## Painel de Resultados - Porto de Areia Santa Eliza")
+# Corrigir nomes de colunas para facilitar uso no código
+df.columns = [col.strip().lower().replace(" ", "_") for col in df.columns]
+
+# Título e logo
+st.image("logo-clara.png", width=180)
+st.markdown("## Gestão de Tráfego")
+st.markdown("### Painel de Resultados - Porto de Areia Santa Eliza")
 
 # Filtro por campanha
-campanhas = df["nome_campanha"].unique()
-campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
-filtro = df[df["nome_campanha"] == campanha_selecionada]
+campanhas = df["nome_da_campanha"].unique()
+campanha_escolhida = st.selectbox("Selecione a campanha", campanhas)
+filtro = df[df["nome_da_campanha"] == campanha_escolhida]
 
 # Métricas principais
-col1, col2, col3 = st.columns(3)
-col1.metric("Gasto", f"R$ {filtro['gasto'].values[0]:,.2f}")
-col2.metric("Cliques no WhatsApp", f"{filtro['cliques_wpp'].values[0]}")
-col3.metric("Leads (conversas)", f"{filtro['leads'].values[0]}")
+col1, col2 = st.columns(2)
+col1.metric("Gasto", f"R$ {filtro['valor_usado_(brl)'].values[0]:,.2f}")
+col2.metric("Resultados", filtro["resultados"].values[0])
 
 # Gráficos
-st.markdown("### Gasto por Campanha")
-fig = px.bar(df, x="nome_campanha", y="gasto", title="Gasto por Campanha")
-st.plotly_chart(fig, use_container_width=True)
+fig1 = px.bar(df, x="nome_da_campanha", y="valor_usado_(brl)", title="Gasto por Campanha")
+fig2 = px.bar(df, x="nome_da_campanha", y="resultados", title="Resultados por Campanha")
 
-# Tabela
-st.markdown("### 📋 Campanhas detalhadas")
-st.dataframe(df)
+st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
 
 # Rodapé
 st.markdown("---")
