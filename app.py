@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -6,22 +5,31 @@ import plotly.express as px
 # Carregar dados
 df = pd.read_csv("dados.csv")
 
+# Título e Logo
 st.image("logo-clara.png", width=150)
-st.markdown("## Gestão de Tráfego")
-st.markdown("### Painel de Resultados - Porto de Areia Santa Eliza")
+st.markdown("<h1 style='text-align: center;'>Gestão de Tráfego</h1>", unsafe_allow_html=True)
+st.markdown("## Painel de Resultados - Porto de Areia Santa Eliza")
 
-# Dropdown para seleção de campanha
-campanha_selecionada = st.selectbox("Selecione a campanha", df["campanha"].unique())
-filtro = df[df["campanha"] == campanha_selecionada]
+# Filtro por campanha
+campanhas = df["nome_campanha"].unique()
+campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
+filtro = df[df["nome_campanha"] == campanha_selecionada]
 
-# Cálculo das métricas com base na seleção
+# Métricas principais
 col1, col2, col3 = st.columns(3)
 col1.metric("Gasto", f"R$ {filtro['gasto'].values[0]:,.2f}")
-col2.metric("Conversões", int(filtro['cliques_wpp'].values[0]))
-col3.metric("Propostas", int(filtro['compras'].values[0]))
+col2.metric("Cliques no WhatsApp", f"{filtro['cliques_wpp'].values[0]}")
+col3.metric("Leads (conversas)", f"{filtro['leads'].values[0]}")
 
-st.markdown("### 📊 Campanhas Detalhadas")
+# Gráficos
+st.markdown("### Gasto por Campanha")
+fig = px.bar(df, x="nome_campanha", y="gasto", title="Gasto por Campanha")
+st.plotly_chart(fig, use_container_width=True)
+
+# Tabela
+st.markdown("### 📋 Campanhas detalhadas")
 st.dataframe(df)
 
+# Rodapé
 st.markdown("---")
 st.markdown("<div style='text-align: center;'>Desenvolvido por Enrico Tráfego Profissional.</div>", unsafe_allow_html=True)
