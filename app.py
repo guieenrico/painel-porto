@@ -16,15 +16,15 @@ df = pd.read_csv("dados.csv")
 df.columns = df.columns.str.strip()
 
 # Converter datas
-df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], dayfirst=True)
+df["Inicio dos Relatorios"] = pd.to_datetime(df["Inicio dos Relatorios"], dayfirst=True)
 df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], dayfirst=True)
 
 # Filtros de data
-data_inicial = pd.to_datetime(st.text_input("Data inicial", value=str(df["Início dos Relatórios"].min().date())))
+data_inicial = pd.to_datetime(st.text_input("Data inicial", value=str(df["Inicio dos Relatorios"].min().date())))
 data_final = pd.to_datetime(st.text_input("Data final", value=str(df["Término dos Relatórios"].max().date())))
 
 # Aplicar filtro de data
-df_filtrado = df[(df["Início dos Relatórios"] >= data_inicial) & (df["Término dos Relatórios"] <= data_final)]
+df_filtrado = df[(df["Inicio dos Relatorios"] >= data_inicial) & (df["Término dos Relatórios"] <= data_final)]
 
 # Filtro por campanha
 campanhas = df_filtrado["Nome da campanha"].dropna().unique()
