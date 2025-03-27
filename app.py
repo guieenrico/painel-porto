@@ -3,61 +3,42 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Configurações da página
-st.set_page_config(page_title="Painel de Resultados", layout="wide")
+# Corrige possíveis espaços e acentos nos nomes das colunas
+def padronizar_colunas(df):
+    df.columns = df.columns.str.strip().str.lower().str.normalize('NFKD')        .str.encode('ascii', errors='ignore').str.decode('utf-8')
+    return df
 
-# Carregar dados
-df = pd.read_csv("dados.csv")
+# Carregar os dados
+df = pd.read_csv("dados.csv", sep=";")
+df = padronizar_colunas(df)
 
-# Corrigir nomes de colunas
-df.columns = df.columns.str.strip()
-
-# Garantir que datas estejam no formato datetime
-df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], errors="coerce")
-df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], errors="coerce")
+# Converter datas
+df["inicio dos relatorios"] = pd.to_datetime(df["inicio dos relatorios"], errors="coerce")
+df["termino dos relatorios"] = pd.to_datetime(df["termino dos relatorios"], errors="coerce")
 
 # Filtros por data
-data_inicial = st.date_input("Data inicial", value=df["Início dos Relatórios"].min().date())
-data_final = st.date_input("Data final", value=df["Término dos Relatórios"].max().date())
+data_inicial = st.date_input("Data inicial", value=df["inicio dos relatorios"].min().date())
+data_final = st.date_input("Data final", value=df["termino dos relatorios"].max().date())
 
-# Filtro por período
-df_filtrado = df[(df["Início dos Relatórios"] >= pd.to_datetime(data_inicial)) & 
-                 (df["Término dos Relatórios"] <= pd.to_datetime(data_final))]
+filtro = df[(df["inicio dos relatorios"].dt.date >= data_inicial) & (df["termino dos relatorios"].dt.date <= data_final)]
 
-# Logo e título
-st.image("logo-clara.png", width=150)
-st.markdown("## Gestão de Tráfego")
-st.markdown("### Painel de Resultados - Porto de Areia Santa Eliza")
+# Seleção de campanha
+campanhas = filtro["nome da campanha"].dropna().unique()
+campanha = st.selectbox("Selecione a campanha", campanhas)
 
-# Selecionar campanha
-campanhas = df_filtrado["Nome da campanha"].dropna().unique()
-campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
+# Métricas da campanha selecionada
+filtro = filtro[filtro["nome da campanha"] == campanha]
 
-# Filtrar dados por campanha
-filtro = df_filtrado[df_filtrado["Nome da campanha"] == campanha_selecionada]
+gasto = filtro["valor usado (brl)"].astype(str).str.replace(",", ".").astype(float).sum()
+resultado = filtro["resultado"].astype(str).str.replace(",", ".").astype(float).sum()
+custo_por_resultado = gasto / resultado if resultado != 0 else 0
 
-# Converter colunas numéricas
-filtro["Valor usado (BRL)"] = pd.to_numeric(filtro["Valor usado (BRL)"], errors="coerce")
-filtro["Custo por resultados"] = pd.to_numeric(filtro["Custo por resultados"], errors="coerce")
-filtro["Resultados"] = pd.to_numeric(filtro["Resultados"], errors="coerce")
-
-# Calcular custo por resultado
-try:
-    custo_por_resultado = filtro["Custo por resultados"].values[0]
-except:
-    custo_por_resultado = 0
-
-# Métricas principais
 col1, col2, col3 = st.columns(3)
-col1.metric("Gasto", f"R$ {filtro['Valor usado (BRL)'].values[0]:,.2f}")
-col2.metric("Leads", f"{filtro['Resultados'].values[0]:,.0f}")
-col3.metric("Custo por Lead", f"R$ {float(custo_por_resultado):,.2f}")
+col1.metric("Gasto", f"R$ {gasto:,.2f}")
+col2.metric("Leads", f"{resultado:,.0f}")
+col3.metric("Custo por Lead", f"R$ {custo_por_resultado:,.2f}")
 
-# Gráfico simples (exemplo)
-st.markdown("### Gráfico de Impressões vs Alcance")
-filtro["Impressões"] = pd.to_numeric(filtro["Impressoes"], errors="coerce")
-filtro["Alcance"] = pd.to_numeric(filtro["Alcance"], errors="coerce")
-
+# Gráfico
 fig, ax = plt.subplots()
-ax.bar(["Impressões", "Alcance"], [filtro["Impressões"].values[0], filtro["Alcance"].values[0]])
+filtro.groupby("nome da campanha")["valor usado (brl)"].sum().plot(kind="bar", ax=ax)
 st.pyplot(fig)
