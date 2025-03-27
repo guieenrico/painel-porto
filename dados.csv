@@ -1,3 +1,10 @@
-nome_campanha,gasto,leads
-[Alcance - 01],107.89,55581
-[Leads WhatsApp],257.6,132
+Inicio dos Relatorios,Termino dos Relatorios,Nome da campanha,Resultados,Indicador de resultados,Alcance,Impressoes,Custo por resultados,Valor usado (BRL)
+12/08/2024,26/03/2025,[Alcance - 01],55581,reach,55581,59727,194.113.096,107.89
+12/08/2024,26/03/2025,[Engajamento - 01],5305,actions:post_engagement,8577,12853,0.00885014,46.95
+12/08/2024,26/03/2025,[ CADASTRO - 01 ],45,actions:onsite_conversion.lead_grouped,23476,92511,27.458,1235.61
+12/08/2024,26/03/2025,[Video Instagram],48132,actions:post_engagement,43296,127005,0.00913654,439.76
+12/08/2024,26/03/2025,[Trafego - ligacoes] - [teste],,,7830,18179,,76.32
+12/08/2024,26/03/2025,[WhatsApp],3,actions:onsite_conversion.messaging_conversation_started_7d,4184,10415,4.805.333.333,144.16
+12/08/2024,26/03/2025,[Visitas ao Perfil],190,profile_visit_view,10691,20191,0.41136842,78.16
+12/08/2024,26/03/2025,[Video Instagram],3176,video_thruplay_watched_actions,14894,21027,0.04240239,134.67
+12/08/2024,26/03/2025,[Alcance] - [formato stories],60160,reach,60160,79465,198.287.899,119.29
