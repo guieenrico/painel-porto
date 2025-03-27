@@ -6,46 +6,36 @@ import plotly.express as px
 # Carregar dados
 df = pd.read_csv("dados.csv")
 
-# Corrigir nomes de colunas com espaços extras
+# Corrigir nomes de colunas
 df.columns = df.columns.str.strip()
 
-# Converter coluna de datas
-df["Inicio dos Relatorios"] = pd.to_datetime(df["Inicio dos Relatorios"], dayfirst=True)
-df["Termino dos Relatorios"] = pd.to_datetime(df["Termino dos Relatorios"], dayfirst=True)
+# Converter colunas de data
+df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], dayfirst=True)
+df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], dayfirst=True)
 
 # Filtros de data
-data_inicial = st.text_input("Data inicial", "2024/08/12")
-data_final = st.text_input("Data final", "2025/03/26")
-data_inicial = pd.to_datetime(data_inicial)
-data_final = pd.to_datetime(data_final)
-df_filtrado = df[(df["Inicio dos Relatorios"] >= data_inicial) & (df["Termino dos Relatorios"] <= data_final)]
+data_inicio = st.text_input("Data inicial", value=str(df["Início dos Relatórios"].min().date()))
+data_fim = st.text_input("Data final", value=str(df["Término dos Relatórios"].max().date()))
 
-# Logo e título
+df_filtrado = df[(df["Início dos Relatórios"] >= data_inicio) & (df["Término dos Relatórios"] <= data_fim)]
+
 st.image("logo-clara.png", width=150)
 st.markdown("## Gestão de Tráfego")
 st.markdown("### Painel de Resultados - Porto de Areia Santa Eliza")
 
-# Seleção de campanha
-campanhas = df_filtrado["Nome da campanha"].unique()
-campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
-filtro = df_filtrado[df_filtrado["Nome da campanha"] == campanha_selecionada]
+campanhas = df_filtrado["Nome da campanha"].dropna().unique()
+campanha_escolhida = st.selectbox("Selecione a campanha", campanhas)
+filtro = df_filtrado[df_filtrado["Nome da campanha"] == campanha_escolhida]
 
-# Resultados
-gasto = filtro["Valor usado (BRL)"].values[0]
-resultado = filtro["Resultado"].values[0]
-custo_por_resultado = filtro["Custo por resultados"].values[0]
+# Pegar valores e tratar se estiverem como texto
+gasto = float(filtro["Valor usado (BRL)"].values[0]) if not filtro.empty else 0
+resultado = float(filtro["Resultados"].values[0]) if not filtro.empty else 0
+custo_por_resultado = float(filtro["Custo por resultados"].values[0]) if not filtro.empty else 0
 
 col1, col2, col3 = st.columns(3)
 col1.metric("Gasto", f"R$ {gasto:,.2f}")
 col2.metric("Leads", f"{resultado:,.1f}")
-col3.metric("Custo por Lead", f"R$ {custo_por_resultado:,.2f}")
-
-# Gráfico de barras por campanha
-st.markdown("### Gráficos por Campanha")
-grafico_gasto = px.bar(df_filtrado, x="Nome da campanha", y="Valor usado (BRL)", title="Gasto por Campanha")
-grafico_resultado = px.bar(df_filtrado, x="Nome da campanha", y="Resultado", title="Resultados por Campanha")
-st.plotly_chart(grafico_gasto, use_container_width=True)
-st.plotly_chart(grafico_resultado, use_container_width=True)
+col3.metric("Custo por Lead", f"R$ {float(custo_por_resultado):,.2f}")
 
 # Rodapé
 st.markdown("---")
