@@ -3,45 +3,49 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
+df = pd.read_csv("dados.csv")
+df.columns = df.columns.str.strip()
+
+# Corrigir formatos de datas e valores
+df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], errors='coerce')
+df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], errors='coerce')
+df["Valor usado (BRL)"] = pd.to_numeric(df["Valor usado (BRL)"], errors="coerce")
+df["Custo por resultados"] = pd.to_numeric(df["Custo por resultados"], errors="coerce")
+df["Resultado"] = pd.to_numeric(df["Resultado"], errors="coerce")
+
+# Filtros
+data_inicial = st.text_input("Data inicial", value=str(df["Início dos Relatórios"].min().date()))
+data_final = st.text_input("Data final", value=str(df["Término dos Relatórios"].max().date()))
+
+# Logo
 st.image("logo-clara.png", width=150)
+
 st.title("Gestão de Tráfego")
 st.header("Painel de Resultados - Porto de Areia Santa Eliza")
 
-# Leitura e tratamento dos dados
-df = pd.read_csv("dados.csv")
-df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"])
-df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"])
+campanhas = df["Nome da campanha"].dropna().unique()
+campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
 
-# Filtros por data
-data_inicial = pd.to_datetime(st.text_input("Data inicial", "2024/08/12"))
-data_final = pd.to_datetime(st.text_input("Data final", "2025/03/26"))
-df = df[(df["Início dos Relatórios"] >= data_inicial) & (df["Término dos Relatórios"] <= data_final)]
+# Aplicar filtros
+filtro = df[(df["Nome da campanha"] == campanha_selecionada)]
+filtro = filtro[
+    (df["Início dos Relatórios"] >= pd.to_datetime(data_inicial)) &
+    (df["Término dos Relatórios"] <= pd.to_datetime(data_final))
+]
 
-# Filtro por campanha
-campanhas = df["Nome da campanha"].unique()
-campanha_escolhida = st.selectbox("Selecione a campanha", campanhas)
-filtro = df[df["Nome da campanha"] == campanha_escolhida]
-
-# Extração de valores
-gasto = filtro["Valor usado (BRL)"].values[0]
-leads = filtro["Resultados"].values[0]
-custo_por_resultado = filtro["Custo por resultados"].values[0]
-
-# Tratamento para valores com separador de milhar
-gasto = float(str(gasto).replace(".", "").replace(",", "."))
-leads = float(str(leads).replace(".", "").replace(",", "."))
-custo_por_resultado = float(str(custo_por_resultado).replace(".", "").replace(",", "."))
-
-# Métricas
 col1, col2, col3 = st.columns(3)
-col1.metric("Gasto", f"R$ {gasto:,.2f}")
-col2.metric("Leads", f"{leads:,.0f}")
-col3.metric("Custo por Lead", f"R$ {custo_por_resultado:,.2f}")
+col1.metric("Gasto", f"R$ {filtro['Valor usado (BRL)'].sum():,.2f}")
+col2.metric("Leads", f"{filtro['Resultado'].sum():,.0f}")
 
-# Gráfico de barras
-st.subheader("Comparativo de Campanhas")
+try:
+    custo_por_resultado = filtro["Custo por resultados"].mean()
+    col3.metric("Custo por Lead", f"R$ {float(custo_por_resultado):,.2f}")
+except:
+    col3.metric("Custo por Lead", "N/A")
+
+# Gráfico de barras com matplotlib
 fig, ax = plt.subplots()
-df_plot = df.copy()
-df_plot["Gasto"] = df_plot["Valor usado (BRL)"].astype(str).str.replace(".", "").str.replace(",", ".").astype(float)
-ax.barh(df_plot["Nome da campanha"], df_plot["Gasto"])
+filtro.groupby("Nome da campanha")["Valor usado (BRL)"].sum().plot(kind="bar", ax=ax)
+ax.set_title("Gasto por Campanha")
+ax.set_ylabel("Valor em R$")
 st.pyplot(fig)
