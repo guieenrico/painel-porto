@@ -1,57 +1,58 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# Logo
+st.image("logo-clara.png", width=150)
+
+# Título
+st.markdown("## Gestão de Tráfego")
+st.markdown("### Painel de Resultados - Porto de Areia Santa Eliza")
+
 # Carregar dados
 df = pd.read_csv("dados.csv")
 
-# Corrigir nomes de colunas com espaços extras ou formatação
+# Corrigir nomes de colunas
 df.columns = df.columns.str.strip()
 
 # Converter datas
-df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], dayfirst=True, errors='coerce')
-df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], dayfirst=True, errors='coerce')
+df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], dayfirst=True)
+df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], dayfirst=True)
 
-# Filtros por data
-data_inicial = pd.to_datetime(st.text_input("Data inicial", "2024/08/12"))
-data_final = pd.to_datetime(st.text_input("Data final", "2025/03/26"))
+# Filtros de data
+data_inicial = pd.to_datetime(st.text_input("Data inicial", value=str(df["Início dos Relatórios"].min().date())))
+data_final = pd.to_datetime(st.text_input("Data final", value=str(df["Término dos Relatórios"].max().date())))
 
+# Aplicar filtro de data
 df_filtrado = df[(df["Início dos Relatórios"] >= data_inicial) & (df["Término dos Relatórios"] <= data_final)]
 
-# Logo e título
-st.image("logo-clara.png", width=150)
-st.markdown("# Gestão de Tráfego")
-st.markdown("## Painel de Resultados - Porto de Areia Santa Eliza")
-
-# Selecionar campanha
+# Filtro por campanha
 campanhas = df_filtrado["Nome da campanha"].dropna().unique()
-campanha_escolhida = st.selectbox("Selecione a campanha", campanhas)
+campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
 
-# Filtrar por campanha
-filtro = df_filtrado[df_filtrado["Nome da campanha"] == campanha_escolhida]
+filtro = df_filtrado[df_filtrado["Nome da campanha"] == campanha_selecionada]
 
-# Calcular métricas
-gasto = filtro["Valor usado (BRL)"].values[0] if not filtro.empty else 0
-leads = filtro["Resultados"].values[0] if not filtro.empty else 0
-try:
-    custo_por_resultado = float(filtro["Custo por resultados"].values[0]) if not filtro.empty else 0
-except:
-    custo_por_resultado = 0
+# Verificar se filtro está vazio
+if not filtro.empty:
+    gasto = filtro["Valor usado (BRL)"].values[0]
+    leads = filtro["Resultados"].values[0]
+    
+    # Tentar converter custo por resultado em número
+    try:
+        custo_por_resultado = float(filtro["Custo por resultados"].values[0])
+    except:
+        custo_por_resultado = None
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Gasto", f"R$ {gasto:,.2f}")
-col2.metric("Leads", f"{leads}")
-col3.metric("Custo por Lead", f"R$ {custo_por_resultado:,.2f}")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Gasto", f"R$ {gasto:,.2f}")
+    col2.metric("Leads", f"{leads}")
+    if custo_por_resultado is not None:
+        col3.metric("Custo por Lead", f"R$ {custo_por_resultado:,.2f}")
+    else:
+        col3.metric("Custo por Lead", "N/A")
 
-# Gráfico de barras: Gasto por campanha
-fig = px.bar(df_filtrado, x="Nome da campanha", y="Valor usado (BRL)", title="Gasto por Campanha")
-st.plotly_chart(fig)
-
-# Gráfico de barras: Leads por campanha
-fig2 = px.bar(df_filtrado, x="Nome da campanha", y="Resultados", title="Leads por Campanha")
-st.plotly_chart(fig2)
-
-# Rodapé
-st.markdown("---")
-st.markdown("<div style='text-align: center;'>Desenvolvido por Enrico Tráfego Profissional.</div>", unsafe_allow_html=True)
+    # Gráfico de barras
+    fig = px.bar(filtro, x="Nome da campanha", y="Valor usado (BRL)", title="Gasto da Campanha Selecionada")
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.warning("Nenhum dado disponível para o filtro selecionado.")
