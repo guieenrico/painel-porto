@@ -6,37 +6,43 @@ import plotly.express as px
 # Carregar dados
 df = pd.read_csv("dados.csv")
 
-# Corrigir nomes de colunas
+# Corrigir nomes de colunas com espaços e acentos
 df.columns = df.columns.str.strip()
 
-# Converter colunas de data
+# Converter datas
 df["Início dos Relatórios"] = pd.to_datetime(df["Início dos Relatórios"], dayfirst=True)
 df["Término dos Relatórios"] = pd.to_datetime(df["Término dos Relatórios"], dayfirst=True)
 
 # Filtros de data
-data_inicio = st.text_input("Data inicial", value=str(df["Início dos Relatórios"].min().date()))
-data_fim = st.text_input("Data final", value=str(df["Término dos Relatórios"].max().date()))
+data_inicial = st.date_input("Data inicial", df["Início dos Relatórios"].min().date())
+data_final = st.date_input("Data final", df["Término dos Relatórios"].max().date())
 
-df_filtrado = df[(df["Início dos Relatórios"] >= data_inicio) & (df["Término dos Relatórios"] <= data_fim)]
+filtro_data = df[
+    (df["Início dos Relatórios"] >= pd.to_datetime(data_inicial)) &
+    (df["Término dos Relatórios"] <= pd.to_datetime(data_final))
+]
 
+# Logo e título
 st.image("logo-clara.png", width=150)
-st.markdown("## Gestão de Tráfego")
-st.markdown("### Painel de Resultados - Porto de Areia Santa Eliza")
+st.markdown("<h1 style='text-align: center;'>Gestão de Tráfego</h1>", unsafe_allow_html=True)
+st.markdown("## Painel de Resultados - Porto de Areia Santa Eliza")
 
-campanhas = df_filtrado["Nome da campanha"].dropna().unique()
-campanha_escolhida = st.selectbox("Selecione a campanha", campanhas)
-filtro = df_filtrado[df_filtrado["Nome da campanha"] == campanha_escolhida]
+# Filtro por campanha
+campanhas = filtro_data["Nome da campanha"].dropna().unique()
+campanha_selecionada = st.selectbox("Selecione a campanha", campanhas)
+filtro = filtro_data[filtro_data["Nome da campanha"] == campanha_selecionada]
 
-# Pegar valores e tratar se estiverem como texto
+# Tratamento para cálculo
 gasto = float(filtro["Valor usado (BRL)"].values[0]) if not filtro.empty else 0
-resultado = float(filtro["Resultados"].values[0]) if not filtro.empty else 0
-custo_por_resultado = float(filtro["Custo por resultados"].values[0]) if not filtro.empty else 0
+leads = float(filtro["Resultado"].values[0]) if not filtro.empty else 0
+custo_por_resultado = gasto / leads if leads > 0 else 0
 
+# Métricas
 col1, col2, col3 = st.columns(3)
 col1.metric("Gasto", f"R$ {gasto:,.2f}")
-col2.metric("Leads", f"{resultado:,.1f}")
-col3.metric("Custo por Lead", f"R$ {float(custo_por_resultado):,.2f}")
+col2.metric("Leads", f"{leads:,.0f}")
+col3.metric("Custo por Lead", f"R$ {custo_por_resultado:,.2f}")
 
-# Rodapé
-st.markdown("---")
-st.markdown("<div style='text-align: center;'>Desenvolvido por Enrico Tráfego Profissional.</div>", unsafe_allow_html=True)
+# Gráficos adicionais
+fig = px.bar(filtro_data, x="Nome da campanha", y="Valor usado (BRL)", title="Gasto por Campanha")
+st.plotly_chart(fig, use_container_width=True)
